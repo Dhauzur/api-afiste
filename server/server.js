@@ -1,100 +1,22 @@
-'use strict';
+require('./config/config');
 
-const mongodb = require('mongodb');
-const http = require('http');
-const nconf = require('nconf');
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors')
+const app = express();
+const bodyParser = require('body-parser');
 
-// Read in keys and secrets. Using nconf use can set secrets via
-// environment variables, command-line arguments, or a keys.json file.
-nconf.argv().env().file('keys.json');
+app.use(cors())
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use(require('./routes/usuario'));
+app.use(require('./routes/orders'));
 
-// Connect to a MongoDB server provisioned over at
-// MongoLab.  See the README for more info.
+mongoose.connect(process.env.URLDB, { useNewUrlParser: true }, (err, res) => {
+    if (err) throw err;
+    console.log('Base de datos ONLINE');
+});
 
-const user = nconf.get('mongoUser');
-const pass = nconf.get('mongoPass');
-const host = nconf.get('mongoHost');
-const port = nconf.get('mongoPort');
-
-let uri = `mongodb://${user}:${pass}@${host}:${port}`;
-if (nconf.get('mongoDatabase')) {
-  uri = `${uri}/${nconf.get('mongoDatabase')}`;
-}
-console.log(uri);
-
-mongodb.MongoClient.connect(uri, (err, db) => {
-  if (err) {
-    throw err;
-  }
-
-  // Create a simple little server.
-  http.createServer((req, res) => {
-    if (req.url === '/_ah/health') {
-      res.writeHead(200, {
-        'Content-Type': 'text/plain'
-      });
-      res.write('OK');
-      res.end();
-      return;
-    }
-    // Track every IP that has visited this site
-    const collection = db.collection('IPs');
-
-    const ip = {
-      address: req.connection.remoteAddress
-    };
-
-    mongodb.MongoClient.connect(uri, { useNewUrlParser: true }, (err, client) => {
-      if (err) {
-        throw err;
-      }
-
-     const db = client.db(nconf.get("mongoDatabase"))
-
-      // push out a range
-      let iplist = '';
-      collection.find().toArray((err, data) => {
-        if (err) {
-          throw err;
-        }
-        // Track every IP that has visited this site
-        const collection = db.collection('IPs');
-
-        const ip = {
-          address: req.connection.remoteAddress
-        };
-
-        collection.insertOne(ip, (err) => {
-          if (err) {
-            throw err;
-          }
-
-          // push out a range
-          let iplist = '';
-          collection.find().toArray((err, data) => {
-            if (err) {
-              throw err;
-            }
-            data.forEach((ip) => {
-              iplist += `${ip.address}; `;
-            });
-
-            res.writeHead(200, {
-              'Content-Type': 'text/plain'
-            });
-            res.write('IPs:\n');
-            res.end(iplist);
-          });
-        });
-
-        res.writeHead(200, {
-          'Content-Type': 'text/plain'
-        });
-        res.write('IPs:\n');
-        res.end(iplist);
-      });
-    });
-  }).listen(process.env.PORT || 8080, () => {
-    console.log('started web process');
-  });
+app.listen(process.env.PORT, () => {
+    console.log('Escuchando puerto: ', process.env.PORT);
 });
