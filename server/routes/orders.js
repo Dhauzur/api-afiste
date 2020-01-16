@@ -14,7 +14,7 @@ app.delete('/orders/delete/all', function(req, res) {
   });
 });
 
-app.get('/orders', function(req, res) {
+app.get('/orderstest', function(req, res) {
   let desde = req.query.desde || 0;
   desde = Number(desde);
   let limite = req.query.limite || 50;
