@@ -20,8 +20,6 @@ app.get('/orders', function(req, res) {
   let limite = req.query.limite || 50;
   limite = Number(limite);
   Order.find(null)
-    .skip(desde)
-    .limit(limite)
     .exec((err, orders) => {
       if (err) {
         return res.status(400).json({
